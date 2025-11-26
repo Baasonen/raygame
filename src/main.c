@@ -1,30 +1,40 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "player.h"
+#include "world.h"
+
+#define SCREEN_W 1980
+#define SCREEN_H 1080
+#define CELL_SIZE 50
 
 int main(int argc, char* argv[]) {
-    // 1. Setup
+
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Simple Player", 1920, 1080, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, NULL);
 
-    // 2. Player State
+    // WORLD
+    World world;
+    if (!loadMap("maps/1.map", &world)) {printf("Unable to load map"); return 0;}
+
+    // PLAYER
     Player player;
     initPlayer(&player, 50.0, 100.0);
 
     bool running = true;
     SDL_Event event;
 
-    // 3. Loop
+
     while (running) {
-        // Events
+       
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) running = false;
         }
 
-        // Movement (Simple Logic)
+    
         const bool* keys = SDL_GetKeyboardState(NULL);
 
         const float rotationSpeed = 0.0005f;
@@ -93,6 +103,16 @@ int main(int argc, char* argv[]) {
         // Draw 2 Triangles
         int indices[6] = {0, 1, 2, 0, 2, 3};
         SDL_RenderGeometry(renderer, NULL, vertices, 4, indices, 6);
+
+        for (int y = 0; y < world.height; y++) {
+            for (int x = 0; x < world.width; x++) {
+                if (isWall(&world, x, y)) {
+                    SDL_FRect rect = { x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white walls
+                    SDL_RenderFillRect(renderer, &rect);
+                }
+            }
+        }
 
         SDL_RenderPresent(renderer);
     }

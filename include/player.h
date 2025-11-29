@@ -7,11 +7,12 @@ typedef struct
     float y;
     float angle;
     float speed;
+    float fov;
 } Player;
 
 void initPlayer(Player* player, float starX, float startY);
 
-void movePlayer(Player* player, float forward, float sideways);
+void movePlayer(Player* player, float deltaX, float DeltaY);
 
 void rotatePlayer(Player* player, float deltaAngle);
 

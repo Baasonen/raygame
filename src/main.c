@@ -6,14 +6,14 @@
 #include "player.h"
 #include "world.h"
 
-#define SCREEN_W 1980
-#define SCREEN_H 1080
-#define CELL_SIZE 50
+#define SCREEN_W 1000
+#define SCREEN_H 1000
+#define CELL_SIZE 100
 
 int main(int argc, char* argv[]) {
 
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Simple Player", 1920, 1080, 0);
+    SDL_Window* window = SDL_CreateWindow("Simple Player", SCREEN_H, SCREEN_W, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, NULL);
 
     // WORLD
@@ -22,7 +22,9 @@ int main(int argc, char* argv[]) {
 
     // PLAYER
     Player player;
-    initPlayer(&player, 50.0, 100.0);
+    initPlayer(&player, 300.00, 250.0);
+    float hw = 15.0f;
+    float hh = 15.0f;
 
     bool running = true;
     SDL_Event event;
@@ -39,6 +41,9 @@ int main(int argc, char* argv[]) {
 
         const float rotationSpeed = 0.0005f;
         const float moveSpeed = 0.03f;
+
+        float moveX = 0;
+        float moveY = 0;
         
         if (keys[SDL_SCANCODE_Q]) 
         {
@@ -48,35 +53,53 @@ int main(int argc, char* argv[]) {
         {
             rotatePlayer(&player, rotationSpeed);  
         }
-
-
         if (keys[SDL_SCANCODE_D]) 
         {  
-            movePlayer(&player, moveSpeed, 0);
+            moveX += moveSpeed;
         }
         if (keys[SDL_SCANCODE_A]) 
         { 
-            movePlayer(&player, -moveSpeed, 0);
-        }
-        if (keys[SDL_SCANCODE_S]) 
-        { 
-            movePlayer(&player, 0, -moveSpeed);
+            moveX -= moveSpeed;
         }
         if (keys[SDL_SCANCODE_W]) 
-        {  
-            movePlayer(&player, 0, moveSpeed);
+        { 
+            moveY -= moveSpeed;
         }
+        if (keys[SDL_SCANCODE_S]) 
+        {  
+            moveY += moveSpeed;
+        }
+
+        int currentX = (player.x) / CELL_SIZE;
+        int currentY = (player.y) / CELL_SIZE;
+
+        int newX = (player.x  + moveX) / CELL_SIZE;
+        int newY = (player.y + moveY) / CELL_SIZE;
+
+        //if (!isWall(&world, newX, player.y))
+        //{
+        //    movePlayer(&player, moveX, 0);
+        //}
+        //
+
+        if (!isWall(&world, currentX, newY))
+        {
+            movePlayer(&player, 0, moveY);
+        }
+  
+        if (!isWall(&world, newX, currentY))
+        {   
+            movePlayer(&player, moveX, 0);
+        }
+
+        //movePlayer(&player, moveX, 0);
 
         // Render
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black Background
         SDL_RenderClear(renderer);
 
-        
-        float hw = 15.0f;
-        float hh = 12.0f;
-
-        float cx = player.x + hw;
-        float cy = player.y + hh;
+        float cx = player.x;
+        float cy = player.y;
 
         SDL_Vertex vertices[4];
 

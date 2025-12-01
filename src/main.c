@@ -14,7 +14,7 @@
 #define SCREEN_W 1000
 #define SCREEN_H 2000
 #define CELL_SIZE 40
-#define RAY_BUFFER 20000
+#define RAY_BUFFER 10000
 #define RAY_AMNT 2
 const float MS_PER_FRAME = (1000 / 480);
 
@@ -139,7 +139,8 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < RAY_BUFFER; i++) 
         {
             SDL_FRect rect = {rays[i].collX - 1.0f, rays[i].collY - 1.0f, 2.0f, 2.0f };
-            colorGradient(rays[i].dist, &dotR, &dotG, &dotB);
+            float lifetime = (float)((rayIndex - i + RAY_BUFFER) % RAY_BUFFER) / RAY_BUFFER;
+            colorGradient(lifetime, &dotR, &dotG, &dotB);
             SDL_SetRenderDrawColor(renderer, dotR, dotG, dotB, 255);
             SDL_RenderFillRect(renderer, &rect);
         }

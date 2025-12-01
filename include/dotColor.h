@@ -3,7 +3,7 @@
 
 void colorGradient(float dist, unsigned char* r, unsigned char* g, unsigned char* b)
 {
-    dist /= 500.0f;
+    //dist /= 500.0f;
 
     if (dist < 0.0f) {dist = 0.0f;}
     if (dist > 1.0f) {dist = 1.0f;}

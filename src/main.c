@@ -101,6 +101,7 @@ int main(int argc, char* argv[]) {
         if (keys[SDL_SCANCODE_2]) {player.raysPerSec = 2;}
         if (keys[SDL_SCANCODE_3]) {player.raysPerSec = 4;}
         if (keys[SDL_SCANCODE_4]) {player.raysPerSec = 8;}
+        if (keys[SDL_SCANCODE_SPACE]) {player.raysPerSec = 10; player.fov = 360.0f;}
 
         int currentX = (player.x) / CELL_SIZE;
         int currentY = (player.y) / CELL_SIZE;

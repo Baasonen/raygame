@@ -9,6 +9,7 @@
 #include "player.h"
 #include "world.h"
 #include "ray.h"
+#include "dotColor.h"
 
 #define SCREEN_W 1000
 #define SCREEN_H 2000
@@ -131,10 +132,15 @@ int main(int argc, char* argv[]) {
         }
         // Draw Collision Points
         long now = SDL_GetTicks();
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
+
+        unsigned char dotR, dotG, dotB;
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); 
         for (int i = 0; i < RAY_BUFFER; i++) 
         {
-            SDL_FRect rect = { rays[i].collX - 2.0f, rays[i].collY - 2.0f, 4.0f, 4.0f };
+            SDL_FRect rect = {rays[i].collX - 1.0f, rays[i].collY - 1.0f, 2.0f, 2.0f };
+            colorGradient(rays[i].dist, &dotR, &dotG, &dotB);
+            SDL_SetRenderDrawColor(renderer, dotR, dotG, dotB, 255);
             SDL_RenderFillRect(renderer, &rect);
         }
 
@@ -173,7 +179,7 @@ int main(int argc, char* argv[]) {
 
         frameTime = SDL_GetTicks() - frameStart;
 
-        if (MS_PER_FRAME > frameTime) {SDL_Delay((long)MS_PER_FRAME - frameTime);}
+        //if (MS_PER_FRAME > frameTime) {SDL_Delay((long)MS_PER_FRAME - frameTime);}
     }
 
 

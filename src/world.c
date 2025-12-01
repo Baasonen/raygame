@@ -14,7 +14,7 @@ bool loadMap(const char* filename, World* world)
         return false;
     }
 
-    if (world->width > MAX_MAP_W || world->height > MAX_MAX_H)
+    if (world->width > MAX_MAP_W || world->height > MAX_MAP_H)
     {
         fclose(f);
         return false;
@@ -26,7 +26,7 @@ bool loadMap(const char* filename, World* world)
         {
             int c = fgetc(f);
             if (c == '0') {world->tiles[y][x] = 0;}
-            else {world->tiles[y][x] = 1;}
+            else if(c == '1') {world->tiles[y][x] = 1;}
             
             // Skip newline at end of row
             if (x == world->width - 1) {fgetc(f);}

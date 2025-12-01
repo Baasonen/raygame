@@ -1,4 +1,8 @@
+#ifndef RAY_H
+#define RAY_H
+
 #include "world.h"
+#include "player.h"
 
 typedef struct
 {
@@ -7,4 +11,6 @@ typedef struct
     float dist;
 } Ray;
 
-void checkRayCollision(Ray* ray, World* world, float startX, float startY, float startAngle, float fov);
+void shootRay(Ray* ray, World* world, Player* player);
+
+#endif

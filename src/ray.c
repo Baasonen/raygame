@@ -1,31 +1,57 @@
 #include <stdbool.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "ray.h"
 
 #define STEP_SIZE 1
 
-void checkRayCollision(Ray* ray, World* world, float startX, float startY, float startAngle, float fov)
+static float randomDirectionInFOV(float playerAngle, float fov)
 {
-    bool hasHit = false;
-    int iteration = 1;
+    float fovRadians = fov * (3.14 / 180.0f);
+    float offset = ((float)rand() / RAND_MAX - 0.5f) * fovRadians;
+    return playerAngle + offset;
+}
 
-    while (!hasHit)
+void checkRayCollision(Ray* ray, World* world, float startX, float startY, float startAngle)
+{
+    float dx = cosf(startAngle);
+    float dy = sinf(startAngle);
+
+    const float stepSize = 1.0f;
+    const int maxDist = 2000;
+
+    float dist = 0.0f;
+
+    while (dist < maxDist)
     {
-        int nextX = (startX + cosf(iteration * STEP_SIZE)) / 100;
-        int nextY = (startY + sinf(iteration * STEP_SIZE)) / 100;
+        float testX = startX + dx * dist;
+        float testY = startY + dy * dist;
 
-        if (isWall(world, nextX, nextY))
+        int tileX = (int)(testX / 40);
+        int tileY = (int)(testY / 40);
+
+        if (isWall(world, tileX, tileY))
         {
-            hasHit = true;
-            ray->collX = (startX + cosf(iteration * STEP_SIZE));
-            ray->collY = (startY + sinf(iteration * STEP_SIZE));
-            ray->dist = iteration * STEP_SIZE;
+            ray->collX = testX;
+            ray->collY = testY;
+            ray->dist = dist;
+            return;
         }
-        else
-        {
-            iteration++;
-        }
+
+        dist += stepSize;
     }
 
-}   
+    ray->collX = 0.0f;
+    ray->collY = 0.0f;
+    ray->dist = 0.0f;
+}
+
+void shootRay(Ray* ray, World* world, Player* player)
+{
+    // Random angle
+    float angle = randomDirectionInFOV(player->angle, player->fov);
+
+    // Cast ray
+    checkRayCollision(ray, world, player->x, player->y, angle);
+}

@@ -5,70 +5,85 @@
 
 #include "player.h"
 #include "world.h"
+#include "ray.h"
 
 #define SCREEN_W 1000
-#define SCREEN_H 1000
-#define CELL_SIZE 100
+#define SCREEN_H 2000
+#define CELL_SIZE 40
+#define RAY_BUFFER 20000
+#define RAY_AMNT 2
+const float MS_PER_FRAME = (1000 / 480);
 
 int main(int argc, char* argv[]) {
 
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Simple Player", SCREEN_H, SCREEN_W, 0);
+    SDL_Window* window = SDL_CreateWindow("Raygame", SCREEN_H, SCREEN_W, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, NULL);
 
     // WORLD
     World world;
-    if (!loadMap("maps/1.map", &world)) {printf("Unable to load map"); return 0;}
+    if (!loadMap("maps/1.txtmap", &world)) {printf("Unable to load map"); return 0;}
 
     // PLAYER
     Player player;
-    initPlayer(&player, 300.00, 250.0);
+    initPlayer(&player, 200.00, 250.0);
     float hw = 15.0f;
     float hh = 15.0f;
+
+    Ray rays[RAY_BUFFER];
+    int rayIndex = 0;
 
     bool running = true;
     SDL_Event event;
 
+    long frameStart;
+    int frameTime;
+    long lastFrame = SDL_GetTicks();
+    long lastTime = SDL_GetTicks();
+    int frameCount = 0;
+
 
     while (running) {
+        frameStart = SDL_GetTicks();
+
+        float dt = (frameStart - lastFrame) / 1000.0f;
+        lastFrame = frameStart;
+
+        long currentTime = SDL_GetTicks();
+        frameCount++;
+
+        if (currentTime - lastTime >= 500)
+        {
+            float fps = frameCount * 500.0f / (currentTime - lastTime);
+            printf("FPS: %.2f\n", fps);
+            
+            frameCount = 0;
+            lastTime = currentTime;
+        }
        
-        while (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event)) 
+        {
             if (event.type == SDL_EVENT_QUIT) running = false;
         }
 
     
         const bool* keys = SDL_GetKeyboardState(NULL);
 
-        const float rotationSpeed = 0.0005f;
-        const float moveSpeed = 0.03f;
+        const float rotationSpeed = 4.0f;
+        const float moveSpeed = 200.0f;
 
         float moveX = 0;
         float moveY = 0;
         
-        if (keys[SDL_SCANCODE_Q]) 
-        {
-            rotatePlayer(&player, -rotationSpeed); 
-        }
-        if (keys[SDL_SCANCODE_E]) 
-        {
-            rotatePlayer(&player, rotationSpeed);  
-        }
-        if (keys[SDL_SCANCODE_D]) 
-        {  
-            moveX += moveSpeed;
-        }
-        if (keys[SDL_SCANCODE_A]) 
-        { 
-            moveX -= moveSpeed;
-        }
-        if (keys[SDL_SCANCODE_W]) 
-        { 
-            moveY -= moveSpeed;
-        }
-        if (keys[SDL_SCANCODE_S]) 
-        {  
-            moveY += moveSpeed;
-        }
+        // Keyboard Inputs
+        if (keys[SDL_SCANCODE_W]) {moveY -= moveSpeed * dt;}
+        if (keys[SDL_SCANCODE_S]) {moveY += moveSpeed * dt;}
+        if (keys[SDL_SCANCODE_A]) {moveX -= moveSpeed * dt;}
+        if (keys[SDL_SCANCODE_D]) {moveX += moveSpeed * dt;}
+            
+        if (keys[SDL_SCANCODE_Q]) {rotatePlayer(&player, -rotationSpeed * dt);}
+        if (keys[SDL_SCANCODE_E]) {rotatePlayer(&player,  rotationSpeed * dt);}
+
 
         int currentX = (player.x) / CELL_SIZE;
         int currentY = (player.y) / CELL_SIZE;
@@ -76,27 +91,50 @@ int main(int argc, char* argv[]) {
         int newX = (player.x  + moveX) / CELL_SIZE;
         int newY = (player.y + moveY) / CELL_SIZE;
 
-        //if (!isWall(&world, newX, player.y))
-        //{
-        //    movePlayer(&player, moveX, 0);
-        //}
-        //
-
-        if (!isWall(&world, currentX, newY))
-        {
-            movePlayer(&player, 0, moveY);
-        }
+        if (!isWall(&world, currentX, newY)) {movePlayer(&player, 0, moveY);}
   
-        if (!isWall(&world, newX, currentY))
-        {   
-            movePlayer(&player, moveX, 0);
+        if (!isWall(&world, newX, currentY)) {movePlayer(&player, moveX, 0);}
+
+        // Cast Rays
+        for (int i = 0; i < RAY_AMNT; i++)
+        {
+            shootRay(&rays[rayIndex], &world, &player);
+            rayIndex = (rayIndex + 1) % RAY_BUFFER;
         }
 
-        //movePlayer(&player, moveX, 0);
 
-        // Render
+        // RENDER
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black Background
         SDL_RenderClear(renderer);
+
+        // Draw Walls (For Debug)
+        //SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255); 
+        //for (int y = 0; y < world.height; y++) {
+        //    for (int x = 0; x < world.width; x++) {
+        //        if (isWall(&world, x, y)) {
+        //            // Use SDL_FRect for consistency with float coordinates
+        //            SDL_FRect rect = { (float)x * CELL_SIZE, (float)y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+        //            SDL_RenderFillRect(renderer, &rect);
+        //        }
+        //    }
+        //}
+        //
+        // Draw Ray Vectors
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 100); 
+        for (int i = 0; i < RAY_AMNT; i++) 
+        {
+            int index = (rayIndex - 1 - i + RAY_BUFFER) % RAY_BUFFER;
+            SDL_RenderLine(renderer, player.x, player.y, rays[index].collX, rays[index].collY);
+        }
+        // Draw Collision Points
+        long now = SDL_GetTicks();
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
+        for (int i = 0; i < RAY_BUFFER; i++) 
+        {
+            SDL_FRect rect = { rays[i].collX - 2.0f, rays[i].collY - 2.0f, 4.0f, 4.0f };
+            SDL_RenderFillRect(renderer, &rect);
+        }
+
 
         float cx = player.x;
         float cy = player.y;
@@ -127,20 +165,15 @@ int main(int argc, char* argv[]) {
         int indices[6] = {0, 1, 2, 0, 2, 3};
         SDL_RenderGeometry(renderer, NULL, vertices, 4, indices, 6);
 
-        for (int y = 0; y < world.height; y++) {
-            for (int x = 0; x < world.width; x++) {
-                if (isWall(&world, x, y)) {
-                    SDL_FRect rect = { x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
-                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white walls
-                    SDL_RenderFillRect(renderer, &rect);
-                }
-            }
-        }
 
         SDL_RenderPresent(renderer);
+
+        frameTime = SDL_GetTicks() - frameStart;
+
+        if (MS_PER_FRAME > frameTime) {SDL_Delay((long)MS_PER_FRAME - frameTime);}
     }
 
-    // 4. Cleanup
+
     SDL_Quit();
     return 0;
 }

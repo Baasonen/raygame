@@ -4,13 +4,13 @@
 #include <stdbool.h>
 
 #define MAX_MAP_W 250
-#define MAX_MAX_H 250
+#define MAX_MAP_H 250
 
 typedef struct 
 {
     int width;
     int height;
-    int tiles[MAX_MAX_H][MAX_MAP_W];
+    int tiles[MAX_MAP_H][MAX_MAP_W];
 } World;
 
 bool loadMap(const char* filename, World* world);

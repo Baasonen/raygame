@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Henri Paasonen - GPLv2
+// See LICENSE for details
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <math.h>

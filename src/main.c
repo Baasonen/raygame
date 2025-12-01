@@ -15,7 +15,6 @@
 #define SCREEN_H 2000
 #define CELL_SIZE 40
 #define RAY_BUFFER 10000
-#define RAY_AMNT 2
 const float MS_PER_FRAME = (1000 / 480);
 
 int main(int argc, char* argv[]) {
@@ -68,6 +67,16 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) 
         {
             if (event.type == SDL_EVENT_QUIT) running = false;
+
+            if (event.type == SDL_EVENT_MOUSE_WHEEL)
+            {
+                float scroll = event.wheel.y;
+
+                player.fov += scroll * 5.0f;
+
+                if (player.fov < 0.01f) {player.fov = 0.1f;}
+                if (player.fov > 180.0f) {player.fov = 180.0f;}
+            }
         }
 
     
@@ -88,6 +97,10 @@ int main(int argc, char* argv[]) {
         if (keys[SDL_SCANCODE_Q]) {rotatePlayer(&player, -rotationSpeed * dt);}
         if (keys[SDL_SCANCODE_E]) {rotatePlayer(&player,  rotationSpeed * dt);}
 
+        if (keys[SDL_SCANCODE_1]) {player.raysPerSec = 1;}
+        if (keys[SDL_SCANCODE_2]) {player.raysPerSec = 2;}
+        if (keys[SDL_SCANCODE_3]) {player.raysPerSec = 4;}
+        if (keys[SDL_SCANCODE_4]) {player.raysPerSec = 8;}
 
         int currentX = (player.x) / CELL_SIZE;
         int currentY = (player.y) / CELL_SIZE;
@@ -100,7 +113,7 @@ int main(int argc, char* argv[]) {
         if (!isWall(&world, newX, currentY)) {movePlayer(&player, moveX, 0);}
 
         // Cast Rays
-        for (int i = 0; i < RAY_AMNT; i++)
+        for (int i = 0; i < player.raysPerSec; i++)
         {
             shootRay(&rays[rayIndex], &world, &player);
             rayIndex = (rayIndex + 1) % RAY_BUFFER;
@@ -122,30 +135,36 @@ int main(int argc, char* argv[]) {
         //        }
         //    }
         //}
-        //
+
         // Draw Ray Vectors
-        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 100); 
-        for (int i = 0; i < RAY_AMNT; i++) 
+        SDL_SetRenderDrawColor(renderer, 0, 150, 150, 100); 
+        for (int i = 0; i < player.raysPerSec; i++) 
         {
             int index = (rayIndex - 1 - i + RAY_BUFFER) % RAY_BUFFER;
             SDL_RenderLine(renderer, player.x, player.y, rays[index].collX, rays[index].collY);
         }
-        // Draw Collision Points
+
+        // Draw Points
         long now = SDL_GetTicks();
 
         unsigned char dotR, dotG, dotB;
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); 
         for (int i = 0; i < RAY_BUFFER; i++) 
-        {
-            SDL_FRect rect = {rays[i].collX - 1.0f, rays[i].collY - 1.0f, 2.0f, 2.0f };
+        {   
             float lifetime = (float)((rayIndex - i + RAY_BUFFER) % RAY_BUFFER) / RAY_BUFFER;
+            
+            if (lifetime >= 1.0f) {continue;}
+
+            float size = ((1.0f - lifetime) * 2.0f) + 0.2f;
+            SDL_FRect rect = {rays[i].collX - size / 2, rays[i].collY - size / 2, size, size};
+
             colorGradient(lifetime, &dotR, &dotG, &dotB);
             SDL_SetRenderDrawColor(renderer, dotR, dotG, dotB, 255);
             SDL_RenderFillRect(renderer, &rect);
         }
 
-
+        // Draw Player
         float cx = player.x;
         float cy = player.y;
 
@@ -175,12 +194,30 @@ int main(int argc, char* argv[]) {
         int indices[6] = {0, 1, 2, 0, 2, 3};
         SDL_RenderGeometry(renderer, NULL, vertices, 4, indices, 6);
 
+        // Draw FOV Lines
+        float halfFOVRad = (player.fov * 0.5f) * (3.14f / 180.0f);
+
+        float rightAngle = player.angle - halfFOVRad;
+        float leftAngle = player.angle + halfFOVRad;
+
+        float fovLineLength = 50.0f;
+
+        float leftX = player.x + cosf(leftAngle) * fovLineLength;
+        float leftY = player.y + sinf(leftAngle) * fovLineLength;
+
+        float rightX = player.x + cosf(rightAngle) * fovLineLength;
+        float rightY = player.y + sinf(rightAngle) * fovLineLength;
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+        SDL_RenderLine(renderer, player.x, player.y, leftX, leftY);
+        SDL_RenderLine(renderer, player.x, player.y, rightX, rightY);
 
         SDL_RenderPresent(renderer);
 
         frameTime = SDL_GetTicks() - frameStart;
 
-        //if (MS_PER_FRAME > frameTime) {SDL_Delay((long)MS_PER_FRAME - frameTime);}
+        if (MS_PER_FRAME > frameTime) {SDL_Delay((long)MS_PER_FRAME - frameTime);}
     }
 
 

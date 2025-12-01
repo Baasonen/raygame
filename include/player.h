@@ -8,6 +8,7 @@ typedef struct
     float angle;
     float speed;
     float fov;
+    int raysPerSec;
 } Player;
 
 void initPlayer(Player* player, float starX, float startY);

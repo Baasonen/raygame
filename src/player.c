@@ -11,6 +11,7 @@ void initPlayer(Player* player, float startX, float startY)
     player->angle = 0;
     player->speed = 0;
     player->fov = 60.0f;
+    player->raysPerSec = 2;
 }
 
 void movePlayer(Player* player, float deltaX, float deltaY)

@@ -31,7 +31,7 @@ void checkRayCollision(Ray* ray, World* world, float startX, float startY, float
         int tileX = (int)(testX / 40);
         int tileY = (int)(testY / 40);
 
-        if (isWall(world, tileX, tileY))
+        if (isWall_int(world, tileX, tileY))
         {
             ray->collX = testX;
             ray->collY = testY;

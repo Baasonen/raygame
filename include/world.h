@@ -13,8 +13,9 @@ typedef struct
     int tiles[MAX_MAP_H][MAX_MAP_W];
 } World;
 
-bool loadMap(const char* filename, World* world);
+bool generateMap(World* world, unsigned long seed, int width, int height);
 
-bool isWall(World* world, int x, int y);
+bool isWall_int(World* world, int x, int y);
+bool isWall_float(World* world, float x, float y, int gridSize);
 
 #endif

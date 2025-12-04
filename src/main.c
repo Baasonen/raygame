@@ -25,16 +25,30 @@ int main(int argc, char* argv[]) {
 
     // WORLD
     World world;
-    if (!loadMap("maps/1.txtmap", &world)) {printf("Unable to load map"); return 0;}
+    long seed = 1234356;
+    if (!generateMap(&world, seed, 200, 200)) {printf("Unable to generate map!");}
 
     // PLAYER
+    float startX = 200.0f;
+    float startY = 250.0f;
+
+    while (isWall_float(&world, startX, startX, CELL_SIZE))
+    {
+        printf("%f %f", startX, startY);
+        startX += 1.0f;
+        startY += 1.0f;
+    }
+
     Player player;
-    initPlayer(&player, 200.00, 250.0);
+    initPlayer(&player, startX, startY);
     float hw = 15.0f;
     float hh = 15.0f;
 
     Ray rays[RAY_BUFFER];
     int rayIndex = 0;
+
+    float camX = 0.0f;
+    float camY = 0.0f;
 
     bool running = true;
     SDL_Event event;
@@ -54,6 +68,9 @@ int main(int argc, char* argv[]) {
 
         long currentTime = SDL_GetTicks();
         frameCount++;
+
+        camX = player.x - (SCREEN_H / 2);
+        camY = player.y - (SCREEN_W / 2);
 
         if (currentTime - lastTime >= 500)
         {
@@ -109,9 +126,9 @@ int main(int argc, char* argv[]) {
         int newX = (player.x  + moveX) / CELL_SIZE;
         int newY = (player.y + moveY) / CELL_SIZE;
 
-        if (!isWall(&world, currentX, newY)) {movePlayer(&player, 0, moveY);}
+        if (!isWall_int(&world, currentX, newY)) {movePlayer(&player, 0, moveY);}
   
-        if (!isWall(&world, newX, currentY)) {movePlayer(&player, moveX, 0);}
+        if (!isWall_int(&world, newX, currentY)) {movePlayer(&player, moveX, 0);}
 
         // Cast Rays
         for (int i = 0; i < player.raysPerSec; i++)
@@ -142,7 +159,8 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < player.raysPerSec; i++) 
         {
             int index = (rayIndex - 1 - i + RAY_BUFFER) % RAY_BUFFER;
-            SDL_RenderLine(renderer, player.x, player.y, rays[index].collX, rays[index].collY);
+            SDL_RenderLine(renderer, player.x - camX, player.y - camY, 
+                           rays[index].collX - camX, rays[index].collY - camY);
         }
 
         // Draw Points
@@ -158,7 +176,7 @@ int main(int argc, char* argv[]) {
             if (lifetime >= 1.0f) {continue;}
 
             float size = ((1.0f - lifetime) * 2.0f) + 0.2f;
-            SDL_FRect rect = {rays[i].collX - size / 2, rays[i].collY - size / 2, size, size};
+            SDL_FRect rect = {(rays[i].collX - size / 2) - camX, (rays[i].collY - size / 2) - camY, size, size};
 
             colorGradient(lifetime, &dotR, &dotG, &dotB);
             SDL_SetRenderDrawColor(renderer, dotR, dotG, dotB, 255);
@@ -172,23 +190,23 @@ int main(int argc, char* argv[]) {
         SDL_Vertex vertices[4];
 
         // Top Left
-        vertices[0].position.x = cx + (-hw)*cosf(player.angle) - (-hh)*sinf(player.angle);
-        vertices[0].position.y = cy + (-hw)*sinf(player.angle) + (-hh)*cosf(player.angle);
+        vertices[0].position.x = cx + (-hw)*cosf(player.angle) - (-hh)*sinf(player.angle) - camX;
+        vertices[0].position.y = cy + (-hw)*sinf(player.angle) + (-hh)*cosf(player.angle) - camY;
         vertices[0].color.r = 255; vertices[0].color.g = 255; vertices[0].color.b = 255; vertices[0].color.a = 255;
 
         // Top Right
-        vertices[1].position.x = cx + (hw)*cosf(player.angle) - (-hh)*sinf(player.angle);
-        vertices[1].position.y = cy + (hw)*sinf(player.angle) + (-hh)*cosf(player.angle);
+        vertices[1].position.x = cx + (hw)*cosf(player.angle) - (-hh)*sinf(player.angle) - camX;
+        vertices[1].position.y = cy + (hw)*sinf(player.angle) + (-hh)*cosf(player.angle) - camY;
         vertices[1].color.r = 255; vertices[1].color.g = 255; vertices[1].color.b = 255; vertices[1].color.a = 255;
 
         // Bottom Right
-        vertices[2].position.x = cx + (hw)*cosf(player.angle) - (hh)*sinf(player.angle);
-        vertices[2].position.y = cy + (hw)*sinf(player.angle) + (hh)*cosf(player.angle);
+        vertices[2].position.x = cx + (hw)*cosf(player.angle) - (hh)*sinf(player.angle) - camX;
+        vertices[2].position.y = cy + (hw)*sinf(player.angle) + (hh)*cosf(player.angle) - camY;
         vertices[2].color.r = 255; vertices[2].color.g = 255; vertices[2].color.b = 255; vertices[2].color.a = 255;
 
         // Bottom Left
-        vertices[3].position.x = cx + (-hw)*cosf(player.angle) - (hh)*sinf(player.angle);
-        vertices[3].position.y = cy + (-hw)*sinf(player.angle) + (hh)*cosf(player.angle);
+        vertices[3].position.x = cx + (-hw)*cosf(player.angle) - (hh)*sinf(player.angle) - camX;
+        vertices[3].position.y = cy + (-hw)*sinf(player.angle) + (hh)*cosf(player.angle) - camY;
         vertices[3].color.r = 255; vertices[3].color.g = 255; vertices[3].color.b = 255; vertices[3].color.a = 255;
         
         // Draw 2 Triangles
@@ -211,8 +229,8 @@ int main(int argc, char* argv[]) {
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-        SDL_RenderLine(renderer, player.x, player.y, leftX, leftY);
-        SDL_RenderLine(renderer, player.x, player.y, rightX, rightY);
+        SDL_RenderLine(renderer, player.x - camX, player.y - camY, leftX - camX, leftY - camY);
+        SDL_RenderLine(renderer, player.x - camX, player.y - camY, rightX - camX, rightY - camY);
 
         SDL_RenderPresent(renderer);
 
